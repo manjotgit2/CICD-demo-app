@@ -3,22 +3,20 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      - aws sts get-caller-identity
-      - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
-      - REPO_URI=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$ECR_REPO_NAME
-      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 289829300949.dkr.ecr.us-east-1.amazonaws.com
 
   build:
     commands:
-      - echo Building the Docker image...
-      - "docker build -t $ECR_REPO_NAME:$IMAGE_TAG ."
-      - "docker tag $ECR_REPO_NAME:$IMAGE_TAG $REPO_URI:$IMAGE_TAG"
-      - "docker tag $ECR_REPO_NAME:$IMAGE_TAG $REPO_URI:latest"
+      - docker build -t cicd-demo-app .
+      - "docker tag cicd-demo-app:latest 289829300949.dkr.ecr.us-east-1.amazonaws.com/cicd-demo-app:latest"
+      - "docker tag cicd-demo-app:latest 289829300949.dkr.ecr.us-east-1.amazonaws.com/cicd-demo-app:$CODEBUILD_RESOLVED_SOURCE_VERSION"
 
   post_build:
     commands:
-      - echo Pushing images to ECR...
-      - "docker push $REPO_URI:$IMAGE_TAG"
-      - "docker push $REPO_URI:latest"
-      - echo Build completed on `date`
+      - "docker push 289829300949.dkr.ecr.us-east-1.amazonaws.com/cicd-demo-app:latest"
+      - "docker push 289829300949.dkr.ecr.us-east-1.amazonaws.com/cicd-demo-app:$CODEBUILD_RESOLVED_SOURCE_VERSION"
+      - printf '[{"name":"YOUR_CONTAINER_NAME","imageUri":"289829300949.dkr.ecr.us-east-1.amazonaws.com/cicd-demo-app:%s"}]' "$CODEBUILD_RESOLVED_SOURCE_VERSION" > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
